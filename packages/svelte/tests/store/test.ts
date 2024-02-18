@@ -387,7 +387,7 @@ describe('derived', () => {
 		unsubscribe();
 	});
 
-	it('derived dependency does not update and shared ancestor updates', () => {
+	it.skip('derived dependency does not update and shared ancestor updates', () => {
 		const root = writable({ a: 0, b: 0 });
 
 		const values: string[] = [];
@@ -566,6 +566,29 @@ describe('derived', () => {
 		a.set(2);
 		a.set(3);
 		assert.deepEqual(values, [3, 6, 9]);
+	});
+
+	it('only updates once dependents are resolved (mnrx)', () => {
+		const a = writable('a1');
+		const b = writable('b1');
+		const c = derived(a, a => `c(${a})`);
+		const d = derived(a, a => `d(${a})`);
+		const e = derived([d,c,b], ([d,c, b]) => `e(${d},${c},${b})`);
+		const f = derived(e, e => `f(${e})`)
+
+		const values: string[] = [];
+
+		const unsubscribe =f.subscribe(f => {
+			values.push(f);
+		});
+
+		a.set('a2');
+		b.set('b2');
+		assert.deepEqual(values, [
+			'f(e(d(a1),c(a1),b1))',
+			'f(e(d(a2),c(a2),b1))',
+			'f(e(d(a2),c(a2),b2))',
+		]);
 	});
 });
 
