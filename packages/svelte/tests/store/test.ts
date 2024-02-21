@@ -390,26 +390,34 @@ describe('derived', () => {
 	it('derived dependency does not update and shared ancestor updates', () => {
 		const root = writable({ a: 0, b: 0 });
 
-		const values: string[] = [];
+		const values_a: string[] = [];
+		const values_b: string[] = [];
 
 		const a = derived(root, ($root) => {
 			return 'a' + $root.a;
+		});
+
+		const unsubscribe_a = a.subscribe((v) => {
+			values_a.push(v as string);
 		});
 
 		const b = derived([a, root], ([$a, $root]) => {
 			return 'b' + $root.b + $a;
 		});
 
-		const unsubscribe = b.subscribe((v) => {
-			values.push(v as string);
+		const unsubscribe_b = b.subscribe((v) => {
+			values_b.push(v as string);
 		});
 
-		assert.deepEqual(values, ['b0a0']);
+		assert.deepEqual(values_a, ['a0']);
+		assert.deepEqual(values_b, ['b0a0']);
 
 		root.set({ a: 0, b: 1 });
-		assert.deepEqual(values, ['b0a0', 'b1a0']);
+		assert.deepEqual(values_a, ['a0']);
+		assert.deepEqual(values_b, ['b0a0', 'b1a0']);
 
-		unsubscribe();
+		unsubscribe_a();
+		unsubscribe_b();
 	});
 
 	it('is updated with safe_not_equal logic', () => {
